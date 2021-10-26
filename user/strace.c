@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     int mask_arg = atoi(argv[1]);
     if(trace(mask_arg) <0)
     {
-        printf("error in trace.c, requesting kernel to engage `trace` failed, exiting\n");
+        printf("error in strace.c, requesting kernel to engage `trace` failed, exiting\n");
         exit(1);
     }
 

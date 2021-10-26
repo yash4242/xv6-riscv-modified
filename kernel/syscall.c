@@ -104,6 +104,7 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_wait(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
+extern uint64 sys_trace();
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -127,6 +128,33 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_trace]   sys_trace,
+};
+
+char* syscall_name_vs_index[] = {
+    "",
+    "fork",
+    "exit",
+    "wait",
+    "pipe",
+    "read",
+    "kill",
+    "exec",
+    "fstat",
+    "chdir",
+    "dup",
+    "getpid",
+    "sbrk",
+    "sleep",
+    "uptime",
+    "open",
+    "write",
+    "mknod",
+    "unlink",
+    "link",
+    "mkdir",
+    "close",
+    "trace",
 };
 
 void
@@ -135,9 +163,25 @@ syscall(void)
   int num;
   struct proc *p = myproc();
 
-  num = p->trapframe->a7;
+  num = p->trapframe->a7; //the index of syscall is in a7 register
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     p->trapframe->a0 = syscalls[num]();
+    int mask = p-> mask;
+    if((1 << num) & mask)
+    {
+      printf("pid:%d,   syscall name:%s   args: (", p->pid, syscall_name_vs_index[num]);
+      if(num == 1 || num == 4 || num == 11 || num == 14)
+      {printf("");}
+      else if (num == 2 || num == 3 || num == 8 || num == 9 || num == 10 || num == 12 || num == 13 || num == 18 || num >= 20)
+      {printf("%d", p->trapframe->a2);}
+      else if(num == 6 || num == 7 || num == 15 || num == 19)
+      {printf("%d %d", p->trapframe->a2, p->trapframe -> a3);}
+      else
+      {printf("%d %d %d", p->trapframe->a2, p->trapframe -> a3, p->trapframe->a4);}
+    
+      printf(") -> return value %d\n", p->trapframe->a0);    
+     
+    }
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

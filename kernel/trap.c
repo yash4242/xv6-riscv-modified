@@ -150,8 +150,13 @@ kerneltrap()
   }
 
   // give up the CPU if this is a timer interrupt.
+  //but agar hamara fcfs hai to nahi give up karna hai na
+  // ab fcfs nahi hoga, tab hi give up hoga (based on time interrupt)
+  //fcfs hoga toh pakde rahega
+#ifndef FCFS
   if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING)
     yield();
+#endif //FCFS
 
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.

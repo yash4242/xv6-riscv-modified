@@ -429,6 +429,29 @@ wait(uint64 addr)
   }
 }
 
+//////////////yashcode starts//////////////////////
+//yash's code for round robin, trying to make xv6 scheduler code more modular
+struct proc*
+roundrobin()
+{
+  struct proc * p;
+  static int cur = -1;
+  cur++;
+  cur = cur % NPROC;
+  p = &proc[cur];
+  return p;
+  /*acquire release kai architecture esa hai
+    ki scheduler() ko har process ke andar ghus ke dekhna hai 
+    ki woh process runnable hai ya nahi
+    agar woh hai toh upsar switch karlo
+    nahi hai to skip that processes
+    ye sare process `proc` name ki array mein hai (`proc` name ki struct bhi hai, woh alag cheez hai isse)
+    agar us array ki koi slot me koi process nahi bhi hai, toh bhi acquire() ko dikkat nahi
+    but agar aqcuire(&(p->lock) mein p NULL hoga toh fir xv6 hi crash hoga)
+  */
+}
+///////////////yashcode ends///////////////////////
+
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -437,33 +460,37 @@ wait(uint64 addr)
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
 void
-scheduler(void)
+scheduler(void)// if there is no runnable process then my schedulers will return NULL
 {
   struct proc *p;
   struct cpu *c = mycpu();
   
   c->proc = 0;
-  for(;;){
+  for(;;) // keep doing this
+  {
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
-
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&p->lock);
+    p = roundrobin();
+    acquire(&p->lock);
+    // Switch to chosen process.  It is the process's job
+    // to release its lock and then reacquire it
+    // before jumping back to us.
+    if(p->state == RUNNABLE)
+    {
+      p->state = RUNNING;
+      c->proc = p;
+      swtch(&c->context, &p->context);  
+      // Process has completed its CPU burst and is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
     }
+    release(&p->lock);
   }
+
+/*
+control flow `swtch` ko paar tab hi karega jab kisi process ka cpu burst pura hoga
+tab tak  
+*/
 }
 
 // Switch to scheduler.  Must hold only p->lock

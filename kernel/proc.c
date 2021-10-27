@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 
+extern uint ticks;
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -296,6 +298,8 @@ fork(void)
   np->trapframe->a0 = 0;
 
   np-> mask = p-> mask; //copy the mask value
+
+  np->ctime = ticks; //creation time is fed into the new proc's struct member
   
   // increment reference counts on open file descriptors.
   for(i = 0; i < NOFILE; i++)
@@ -431,6 +435,7 @@ wait(uint64 addr)
 
 //////////////yashcode starts//////////////////////
 //yash's code for round robin, trying to make xv6 scheduler code more modular
+#ifdef RR
 struct proc*
 roundrobin()
 {
@@ -450,6 +455,27 @@ roundrobin()
     but agar aqcuire(&(p->lock) mein p NULL hoga toh fir xv6 hi crash hoga)
   */
 }
+#endif // RR
+
+//fcfs scheduling code
+#ifdef FCFS
+static struct proc*
+fcfs()
+{
+  uint age_check = 0;
+  uint age_max = 0;
+  int whichproc=0;
+  for(int i = 0; i<NPROC; i++)
+  {
+    if(proc[i].state != RUNNABLE)
+      continue;
+    age_check = ticks - proc[i].ctime;
+    if(age_max <= age_check){age_max = age_check; whichproc = i;}
+  }
+  // `whichproc` index wala process hi hai jisko cpu ko ab dena hai
+  return &proc[whichproc];
+}
+#endif // FCFS
 ///////////////yashcode ends///////////////////////
 
 // Per-CPU process scheduler.
@@ -470,7 +496,14 @@ scheduler(void)// if there is no runnable process then my schedulers will return
   {
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
+#ifdef RR
     p = roundrobin();
+#endif // RR
+
+#ifdef FCFS
+    p = fcfs();
+#endif //FCFS
+
     acquire(&p->lock);
     // Switch to chosen process.  It is the process's job
     // to release its lock and then reacquire it

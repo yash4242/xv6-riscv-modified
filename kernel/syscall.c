@@ -170,15 +170,27 @@ syscall(void)
     if((1 << num) & mask)
     {
       printf("pid:%d,   syscall name:%s   args: (", p->pid, syscall_name_vs_index[num]);
-      if(num == 1 || num == 4 || num == 11 || num == 14)
-      {printf("");}
-      else if (num == 2 || num == 3 || num == 8 || num == 9 || num == 10 || num == 12 || num == 13 || num == 18 || num >= 20)
-      {printf("%d", p->trapframe->a2);}
-      else if(num == 6 || num == 7 || num == 15 || num == 19)
-      {printf("%d %d", p->trapframe->a2, p->trapframe -> a3);}
-      else
-      {printf("%d %d %d", p->trapframe->a2, p->trapframe -> a3, p->trapframe->a4);}
-    
+      // if(num == 1 || num == 4 || num == 11 || num == 14)
+      // {printf("");}
+      // else if (num == 2 || num == 3 || num == 8 || num == 9 || num == 10 || num == 12 || num == 13 || num == 18 || num >= 20)
+      // {printf("%d", p->trapframe->a2);}
+      // else if(num == 6 || num == 7 || num == 15 || num == 19)
+      // {printf("%d %d", p->trapframe->a2, p->trapframe -> a3);}
+      // else
+      // {printf("%d %d %d", p->trapframe->a2, p->trapframe -> a3, p->trapframe->a4);}
+
+
+      printf("%d %d %d %d %d %d %d %d", 
+      p->trapframe->a0, 
+      p->trapframe -> a1, 
+      p->trapframe -> a2, 
+      p->trapframe -> a3, 
+      p->trapframe -> a4, 
+      p->trapframe -> a5, 
+      p->trapframe -> a6,
+            p->trapframe -> a7
+
+      );
       printf(") -> return value %d\n", p->trapframe->a0);    
      
     }

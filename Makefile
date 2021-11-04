@@ -16,6 +16,7 @@ OBJS = \
   $K/swtch.o \
   $K/trampoline.o \
   $K/trap.o \
+  $K/queue.o\
   $K/syscall.o \
   $K/sysproc.o \
   $K/bio.o \
@@ -146,6 +147,9 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 	$U/_strace\
+	$U/_schedulertest\
+	$U/_time\
+	$U/_setpriority\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

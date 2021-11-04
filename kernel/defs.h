@@ -99,11 +99,22 @@ void            sched(void);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
 int             wait(uint64);
+int             waitx(uint64, uint*, uint*);
 void            wakeup(void*);
 void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
+int 			set_priority(int, int);
+void 			ageing();
+void            update_time(void);
+
+// //queue.c
+// void 			queue_push(struct Queue*, struct proc*);
+// void 			queue_pop(struct Queue*);
+// struct proc*	queue_front(struct Queue*);
+// void 			queue_remove(struct Queue*, int pid);
+
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -184,3 +195,7 @@ void            virtio_disk_intr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+//min max macros
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))

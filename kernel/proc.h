@@ -109,4 +109,37 @@ struct proc {
   uint ctime;                  // creationf time; added by yash for fcfs
   uint etime;                  // end time; added by yash for fcfs
   uint rtime;                  // rum time; added by yash for fcfs
+  
+  //PBS things
+  uint niceness;               // be calculated for each process on the basis of time spent sleeping/running,
+                               // will affect dynamic priority
+  uint static_prio;            // for priority based scheduling
+  uint dyn_prio;
+  uint num_scheduled;          // how many times has this been scheduled
+  uint recent_sleep_time;      // how many ticks has the process been sleeping for, it is sufficiently high prio now?
+  uint recent_run_time;        // how long did the the proc run for the last time it was scheduled?  
+
+  //MLFQ things
+  int level;
+  int is_queued;
+  int change_queue_after;
+  int entered_queue_at;
+  int time_spent_at[NMLFQ];
+  int entered_cpu_at;
 };
+
+struct Queue
+{
+  int head;
+  int tail;
+  int size;
+  struct proc* content[NPROC+1];
+};
+
+
+
+void      queue_push(struct Queue*, struct proc*);
+void      queue_pop(struct Queue*);
+struct proc*  queue_front(struct Queue*);
+void      queue_remove(struct Queue*, int pid);
+

@@ -11,3 +11,5 @@
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 #define FSSIZE       1000  // size of file system in blocks
 #define MAXPATH      128   // maximum file path name
+#define NMLFQ		 5		// number of queues in our specification for mlfq
+#define MAX_AGE		 128		// after these many ticks the RUNNABLE process will gain priority, for ageing

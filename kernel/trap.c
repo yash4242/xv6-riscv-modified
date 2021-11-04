@@ -8,8 +8,8 @@
 
 struct spinlock tickslock;
 uint ticks;
-
 extern char trampoline[], uservec[], userret[];
+extern struct proc proc[NPROC];
 
 // in kernelvec.S, calls kerneltrap().
 void kernelvec();
@@ -77,9 +77,27 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
+#ifndef FCFS
+#ifndef MLFQ
   if(which_dev == 2)
+  {
     yield();
+  }
+#endif // FCFS
+#endif //MLFQ
 
+#ifdef MLFQ
+  if(which_dev == 2 && myproc()->change_queue_after <= 0)
+    {
+      if(myproc()->level +1 != MLFQ)
+      {
+        // acquire(&myproc()->lock);
+          myproc()->level++;
+       // release(&myproc()->lock);
+      }
+      yield();
+    }
+#endif
   usertrapret();
 }
 
@@ -154,9 +172,24 @@ kerneltrap()
   // ab fcfs nahi hoga, tab hi give up hoga (based on time interrupt)
   //fcfs hoga toh pakde rahega
 #ifndef FCFS
+#ifndef MLFQ
   if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING)
-    yield();
+      yield();    
 #endif //FCFS
+#endif //MLFQ
+
+#ifdef MLFQ
+if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING && myproc() -> change_queue_after <= 0)
+  {
+    if(myproc()->level +1 != MLFQ)
+    {
+      // acquire(&myproc()->lock);
+        myproc()->level++;
+      // release(&myproc()->lock);
+    }
+    yield();
+  }
+#endif
 
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.
@@ -169,8 +202,46 @@ clockintr()
 {
   acquire(&tickslock);
   ticks++;
-  wakeup(&ticks);
+  update_time();
+  wakeup(&ticks); 
   release(&tickslock);
+  if(myproc()){
+    myproc()->rtime++;
+   
+    myproc()->time_spent_at[myproc()->level]++;
+    myproc()->change_queue_after --;
+  }
+
+  //scanning the entire proc table and incrementing 
+  //sleep and run times so that niceness can be calculated
+
+  struct proc* p;
+  for(p = proc; p<&proc[NPROC]; p++)
+  {
+    acquire(&p->lock);
+    if(p->state == SLEEPING)
+      {p->recent_sleep_time++;}
+    if(p->state == RUNNING)
+      {p->recent_run_time++;}
+    p->niceness = (10* p->recent_sleep_time)/(p->recent_sleep_time + p->recent_run_time);
+    p-> dyn_prio = MAX(0, MIN(p->static_prio - p->niceness+5, 100));
+    if(p->niceness == 0)
+      {p->dyn_prio+=5;}
+    if(p->niceness == 10)
+      {p->dyn_prio -= 5;}
+    release(&p->lock);
+  }
+
+
+
+// #ifdef MLFQ
+// if(myproc()->change_queue_after <= 0)
+// {
+//   myproc()->level++;
+//   if(myproc()->level > NMLFQ -1)
+//     {myproc()->level = NMLFQ -1;}
+// }
+// #endif //MLFQ
 }
 
 // check if it's an external interrupt or software interrupt,

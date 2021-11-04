@@ -105,6 +105,8 @@ extern uint64 sys_wait(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
 extern uint64 sys_trace();
+extern uint64 sys_set_priority(void);
+extern uint64 sys_waitx(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -129,6 +131,9 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
+[SYS_set_priority] sys_set_priority,
+[SYS_waitx]   sys_waitx
+
 };
 
 char* syscall_name_vs_index[] = {
@@ -155,6 +160,7 @@ char* syscall_name_vs_index[] = {
     "mkdir",
     "close",
     "trace",
+    "set_priority",
 };
 
 void
@@ -165,34 +171,25 @@ syscall(void)
 
   num = p->trapframe->a7; //the index of syscall is in a7 register
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    int arg0 = p->trapframe->a0;
+    int arg1 = p->trapframe->a1;
+    int arg2 = p->trapframe->a2;
+
     p->trapframe->a0 = syscalls[num]();
     int mask = p-> mask;
     if((1 << num) & mask)
     {
-      printf("pid:%d,   syscall name:%s   args: (", p->pid, syscall_name_vs_index[num]);
-      // if(num == 1 || num == 4 || num == 11 || num == 14)
-      // {printf("");}
-      // else if (num == 2 || num == 3 || num == 8 || num == 9 || num == 10 || num == 12 || num == 13 || num == 18 || num >= 20)
-      // {printf("%d", p->trapframe->a2);}
-      // else if(num == 6 || num == 7 || num == 15 || num == 19)
-      // {printf("%d %d", p->trapframe->a2, p->trapframe -> a3);}
-      // else
-      // {printf("%d %d %d", p->trapframe->a2, p->trapframe -> a3, p->trapframe->a4);}
-
-
-      printf("%d %d %d %d %d %d %d %d", 
-      p->trapframe->a0, 
-      p->trapframe -> a1, 
-      p->trapframe -> a2, 
-      p->trapframe -> a3, 
-      p->trapframe -> a4, 
-      p->trapframe -> a5, 
-      p->trapframe -> a6,
-            p->trapframe -> a7
-
-      );
-      printf(") -> return value %d\n", p->trapframe->a0);    
-     
+      printf("%d: syscall %s (", p->pid, syscall_name_vs_index[num]);
+      if(num == 1 || num == 4 || num == 11 || num == 14)
+      {printf("");}
+      else if (num == 2 || num == 3 || num == 8 || num == 9 || num == 10 || num == 12 || num == 13 || num == 18 || num >= 20)
+      {printf("%d", arg0);}
+      else if(num == 6 || num == 7 || num == 15 || num == 19)
+      {printf("%d %d", arg0, arg1);}
+      else
+      {printf("%d %d %d", arg0, arg1, arg2);}
+    
+      printf(") -> %d\n", p->trapframe->a0);    
     }
   } else {
     printf("%d %s: unknown sys call %d\n",
